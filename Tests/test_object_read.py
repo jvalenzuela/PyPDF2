@@ -86,3 +86,47 @@ class Boolean(unittest.TestCase):
         s = make_stream('TRUE')
         with self.assertRaises(utils.PdfReadError):
             generic.BooleanObject.readFromStream(s)
+
+
+class Array(unittest.TestCase):
+    """Tests for reading an Array object."""
+    def test_type(self):
+        """Confirm the correct object type is created."""
+        s = make_stream('[]')
+        o = generic.ArrayObject.readFromStream(s, None)
+        self.assertIsInstance(o, list)
+
+    def test_length(self):
+        """Confirm the correct number of bytes are read from the input."""
+        src = '[true]'
+        stream = make_stream(src)
+        generic.ArrayObject.readFromStream(stream, None)
+        pos = stream.tell()
+        length = len(src)
+        self.assertEqual(pos, length)
+
+    def test_eof(self):
+        """Confirm an exception is raised if EOF is encountered in the input."""
+        s = make_stream('[')
+        with self.assertRaises(utils.PdfReadError):
+            generic.ArrayObject.readFromStream(s, None)
+
+    def test_item_count(self):
+        """Confirm the correct number of items are added to the array."""
+        s = make_stream('[42 (spam) (eggs)]')
+        array = generic.ArrayObject.readFromStream(s, None)
+        length = len(array)
+        self.assertEqual(length, 3)
+
+    def test_item_order(self):
+        """Confirm items are ordered correctly."""
+        s = make_stream('[(first) (last)]')
+        array = generic.ArrayObject.readFromStream(s, None)
+        self.assertEqual(array[0], 'first')
+        self.assertEqual(array[-1], 'last')
+
+    def test_invalid_start_token(self):
+        """Confirm an exception is raised without the opening square bracket."""
+        s = make_stream('true]')
+        with self.assertRaises(utils.PdfReadError):
+            generic.ArrayObject.readFromStream(s, None)
